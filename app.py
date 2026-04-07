@@ -1,8 +1,6 @@
 ﻿from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
-import json
-import pandas as pd
-import numpy as np
+import os
 from datetime import datetime, timedelta
 import random
 import threading
@@ -11,7 +9,7 @@ import time
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = 'your-secret-key-here'
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 @app.route('/favicon.ico')
 def favicon():
@@ -53,8 +51,10 @@ def update_traffic_data():
             else:
                 signal['cycle_time'] = random.randint(90, 130)
 
-update_thread = threading.Thread(target=update_traffic_data, daemon=True)
-update_thread.start()
+# Background loop is disabled in serverless (Vercel) to avoid long-running workers.
+if os.environ.get('VERCEL') != '1':
+    update_thread = threading.Thread(target=update_traffic_data, daemon=True)
+    update_thread.start()
 
 @app.route('/')
 def index():
