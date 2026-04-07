@@ -1,0 +1,602 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Road Ranger AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-traffic-light"></i>
+            </div>
+            <div class="logo-text">Road Ranger AI</div>
+        </div>
+        
+        <ul class="nav-links">
+            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="/dashboard" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="/traffic-map"><i class="fas fa-map-marked-alt"></i> Traffic Map</a></li>
+            <li><a href="/predictions"><i class="fas fa-chart-line"></i> Predictions</a></li>
+            <li><a href="/traffic-control"><i class="fas fa-cogs"></i> Control Panel</a></li>
+            <li><a href="/reports"><i class="fas fa-file-alt"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="dashboard-header">
+            <h1><i class="fas fa-tachometer-alt"></i> Traffic Dashboard</h1>
+            <div class="dashboard-controls">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="realtime-toggle" checked>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Real-time Updates</span>
+                </label>
+                <div class="dashboard-buttons" style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-primary" onclick="trafficDashboard.refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportData()">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="dashboard-grid">
+            <!-- Traffic Overview -->
+            <div class="dashboard-card large">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-bar"></i> Traffic Congestion Overview</h3>
+                    <div class="time-selector">
+                        <select id="time-range">
+                            <option value="1">Last Hour</option>
+                            <option value="6">Last 6 Hours</option>
+                            <option value="24" selected>Last 24 Hours</option>
+                            <option value="168">Last Week</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <canvas id="traffic-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Signal Status -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-traffic-light"></i> Signal Status</h3>
+                </div>
+                <div class="card-content" id="signals-container">
+                    <!-- Signal status will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Prediction Alert -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Alerts & Predictions</h3>
+                </div>
+                <div class="card-content">
+                    <div class="alert-list" id="alerts-container">
+                        <!-- Alerts will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-pie"></i> Performance Metrics</h3>
+                </div>
+                <div class="card-content">
+                    <div class="metric-grid">
+                        <div class="metric-item">
+                            <div class="metric-value">94.2%</div>
+                            <div class="metric-label">Prediction Accuracy</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">87.5%</div>
+                            <div class="metric-label">Signal Efficiency</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">23.4%</div>
+                            <div class="metric-label">Congestion Reduced</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">15.8%</div>
+                            <div class="metric-label">Travel Time Saved</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route Optimization -->
+            <div class="dashboard-card large">
+                <div class="card-header">
+                    <h3><i class="fas fa-route"></i> Route Optimization</h3>
+                </div>
+                <div class="card-content">
+                    <div class="route-optimization-form">
+                        <div class="form-group">
+                            <label for="route-start"><i class="fas fa-map-marker-alt"></i> Start Location</label>
+                            <input type="text" id="route-start" placeholder="Enter start address">
+                        </div>
+                        <div class="form-group">
+                            <label for="route-end"><i class="fas fa-flag-checkered"></i> Destination</label>
+                            <input type="text" id="route-end" placeholder="Enter destination">
+                        </div>
+                        <button class="btn btn-primary" id="optimize-btn" onclick="trafficDashboard.optimizeRoute()">
+                            <i class="fas fa-search"></i> Find Optimal Route
+                        </button>
+                    </div>
+                    <div class="route-results" id="route-results">
+                        <!-- Route results will appear here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Traffic Feed -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-video"></i> Live Traffic Feed</h3>
+                </div>
+                <div class="card-content">
+                    <div class="camera-feed">
+                        <div class="camera-view" style="padding: 0; position: relative;">
+                            <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                                <source src="{{ url_for('static', filename='videos/sample_video.mp4') }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="detection-grid-overlay" id="detection-grid">
+                                <!-- Grid cells generated by JS -->
+                            </div>
+                            <div style="position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; z-index: 5;">
+                                <i class="fas fa-video"></i> Downtown Intersection
+                            </div>
+                            <div style="position: absolute; top: 10px; right: 10px; background: rgba(220, 53, 69, 0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; animation: pulse 2s infinite; z-index: 5;">
+                                LIVE
+                            </div>
+                        </div>
+                        <div class="prediction-report-container">
+                            <h4><i class="fas fa-chart-line"></i> Real-time Prediction Report</h4>
+                            <div class="vehicle-count-grid">
+                                <div class="count-item">
+                                    <span class="count-label">Cars</span>
+                                    <span class="count-value" id="count-cars">42</span>
+                                    <span class="count-trend up"><i class="fas fa-arrow-up"></i></span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-label">Trucks</span>
+                                    <span class="count-value" id="count-trucks">8</span>
+                                    <span class="count-trend down"><i class="fas fa-arrow-down"></i></span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-label">Buses</span>
+                                    <span class="count-value" id="count-buses">3</span>
+                                    <span class="count-trend flat"><i class="fas fa-minus"></i></span>
+                                </div>
+                                <div class="count-item total">
+                                    <span class="count-label">Total Flow</span>
+                                    <span class="count-value" id="count-total">53</span>
+                                    <span class="count-unit">veh/hr</span>
+                                </div>
+                            </div>
+                            <div class="prediction-status">
+                                <span>Density: <strong id="density-level">Moderate</strong></span>
+                                <span>Trend: <strong id="trend-level">Increasing</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <style>
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .dashboard-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--success);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        .toggle-label {
+            margin-left: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .dashboard-card {
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(67, 97, 238, 0.2);
+        }
+        
+        .dashboard-card.large {
+            grid-column: span 2;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card-content {
+            height: 300px;
+            overflow-y: auto;
+        }
+        
+        .alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .alert-item {
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(247, 37, 133, 0.1);
+            border-left: 4px solid var(--danger);
+        }
+        
+        .alert-item.warning {
+            background: rgba(248, 150, 30, 0.1);
+            border-left-color: var(--warning);
+        }
+        
+        .alert-item.info {
+            background: rgba(76, 201, 240, 0.1);
+            border-left-color: var(--success);
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .metric-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .route-optimization-form {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group label {
+            color: var(--success);
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+        }
+        
+        .camera-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .camera-view {
+            height: 200px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .camera-placeholder {
+            text-align: center;
+            color: var(--gray);
+        }
+        
+        .camera-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .vehicle-count {
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .count-item {
+            text-align: center;
+        }
+        
+        .count-value {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-card.large {
+                grid-column: span 1;
+            }
+        }
+    </style>
+    <script>
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            loadAlerts();
+        });
+        
+        function initializeCharts() {
+            const ctx = document.getElementById('traffic-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'],
+                    datasets: [
+                        {
+                            label: 'Downtown',
+                            data: [45, 65, 85, 90, 75, 65, 70, 80, 75, 70, 85, 95],
+                            borderColor: '#f72585',
+                            backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Suburbs',
+                            data: [30, 40, 55, 65, 60, 55, 50, 45, 40, 45, 60, 70],
+                            borderColor: '#4cc9f0',
+                            backgroundColor: 'rgba(76, 201, 240, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Highway',
+                            data: [60, 75, 90, 85, 80, 70, 65, 70, 75, 80, 85, 90],
+                            borderColor: '#f8961e',
+                            backgroundColor: 'rgba(248, 150, 30, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#fff'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: '#fff'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#fff'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function loadAlerts() {
+            const alerts = [
+                {
+                    type: 'warning',
+                    message: 'Heavy congestion predicted at Downtown Intersection in 30 minutes',
+                    time: '2 minutes ago'
+                },
+                {
+                    type: 'danger',
+                    message: 'Accident reported on Highway 5 - Expect delays',
+                    time: '15 minutes ago'
+                },
+                {
+                    type: 'info',
+                    message: 'Signal optimization completed - Reduced wait times by 25%',
+                    time: '1 hour ago'
+                },
+                {
+                    type: 'warning',
+                    message: 'Road construction starting at 3 PM on Main Street',
+                    time: '2 hours ago'
+                }
+            ];
+            
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = alerts.map(alert => `
+                <div class="alert-item ${alert.type}">
+                    <div class="alert-message">${alert.message}</div>
+                    <div class="alert-time">${alert.time}</div>
+                </div>
+            `).join('');
+        }
+        
+        // Add refresh method to dashboard
+        trafficDashboard.refreshData = function() {
+            this.loadTrafficData();
+            this.showNotification('Dashboard data refreshed', 'success');
+        };
+        function exportData() {
+            if (typeof trafficDashboard.showNotification === 'function') {
+                trafficDashboard.showNotification('Exporting dashboard data...', 'info');
+            } else {
+                alert('Exporting data...');
+            }
+            setTimeout(() => {
+                if (typeof trafficDashboard.showNotification === 'function') {
+                    trafficDashboard.showNotification('Data exported to CSV successfully', 'success');
+                } else {
+                    alert('Detail exported!');
+                }
+            }, 1000);
+        }        // Initialize simulation for grid and report
+        document.addEventListener('DOMContentLoaded', function() {
+            initTrafficSimulation();
+        });
+
+        function initTrafficSimulation() {
+            const gridContainer = document.getElementById('detection-grid');
+            const totalCells = 24; // 6x4 as per CSS
+
+            // Generate Grid
+            for (let i = 0; i < totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                gridContainer.appendChild(cell);
+            }
+
+            // Simulate Detection
+            setInterval(() => {
+                const cells = document.querySelectorAll('.grid-cell');
+                // clear some
+                cells.forEach(c => c.classList.remove('active'));
+                
+                // activate random cells (simulate vehicles)
+                const activeCount = Math.floor(Math.random() * 5) + 2; 
+                for(let i=0; i<activeCount; i++) {
+                    const idx = Math.floor(Math.random() * totalCells);
+                    cells[idx].classList.add('active');
+                }
+
+                // Update Report
+                updateReportNumbers();
+            }, 800);
+        }
+
+        function updateReportNumbers() {
+            // Simulate live data changes
+            const carVal = document.getElementById('count-cars');
+            const truckVal = document.getElementById('count-trucks');
+            const busVal = document.getElementById('count-buses');
+            const totalVal = document.getElementById('count-total');
+            const densityVal = document.getElementById('density-level');
+
+            // Small random fluctuation
+            if(Math.random() > 0.5) carVal.innerText = Math.max(30, parseInt(carVal.innerText) + (Math.random() > 0.5 ? 1 : -1));
+            if(Math.random() > 0.8) truckVal.innerText = Math.max(2, parseInt(truckVal.innerText) + (Math.random() > 0.5 ? 1 : -1));
+            
+            const total = parseInt(carVal.innerText) + parseInt(truckVal.innerText) + parseInt(busVal.innerText);
+            totalVal.innerText = total;
+
+            if (total > 60) {
+                densityVal.innerText = "Heavy";
+                densityVal.style.color = "var(--danger)";
+            } else if (total > 40) {
+                 densityVal.innerText = "Moderate";
+                 densityVal.style.color = "var(--warning)";
+            } else {
+                 densityVal.innerText = "Low";
+                 densityVal.style.color = "var(--success)";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Control - Road Ranger AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-traffic-light"></i>
+            </div>
+            <div class="logo-text">Road Ranger AI</div>
+        </div>
+        
+        <ul class="nav-links">
+            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="/traffic-map"><i class="fas fa-map-marked-alt"></i> Traffic Map</a></li>
+            <li><a href="/predictions"><i class="fas fa-chart-line"></i> Predictions</a></li>
+            <li><a href="/traffic-control" class="active"><i class="fas fa-cogs"></i> Control Panel</a></li>
+            <li><a href="/reports"><i class="fas fa-file-alt"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="control-header">
+            <h1><i class="fas fa-cogs"></i> Traffic Control Panel</h1>
+            <div class="control-status">
+                <div class="status-indicator active">
+                    <div class="status-dot"></div>
+                    <span>System Active</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-grid">
+            <!-- Signal Control Section -->
+            <div class="control-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-traffic-light"></i> Traffic Signal Control</h2>
+                    <button class="btn btn-primary" onclick="enableAutoMode()">
+                        <i class="fas fa-robot"></i> Enable Auto Mode
+                    </button>
+                </div>
+                
+                <div class="signal-controls" id="signal-controls-container">
+                    <!-- Signal controls will be loaded here -->
+                </div>
+                
+                <div class="control-actions">
+                    <button class="btn btn-success" onclick="optimizeAllSignals()">
+                        <i class="fas fa-magic"></i> Optimize All Signals
+                    </button>
+                    <button class="btn btn-warning" onclick="resetToDefault()">
+                        <i class="fas fa-undo"></i> Reset to Default
+                    </button>
+                </div>
+            </div>
+
+            <!-- Emergency Control Section -->
+            <div class="control-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-ambulance"></i> Emergency Control</h2>
+                </div>
+                
+                <div class="emergency-controls">
+                    <div class="emergency-option">
+                        <h3><i class="fas fa-ambulance"></i> Emergency Vehicle Priority</h3>
+                        <p>Grant priority to emergency vehicles on selected routes</p>
+                        <button class="btn btn-danger" onclick="activateEmergencyMode()">
+                            <i class="fas fa-bolt"></i> Activate Emergency Mode
+                        </button>
+                    </div>
+                    
+                    <div class="emergency-option">
+                        <h3><i class="fas fa-road"></i> Clear Route</h3>
+                        <p>Create clear path for emergency response</p>
+                        <div class="route-select">
+                            <select id="emergency-route">
+                                <option value="hospital">To Hospital</option>
+                                <option value="fire">To Fire Station</option>
+                                <option value="police">To Police Station</option>
+                                <option value="custom">Custom Route</option>
+                            </select>
+                            <button class="btn btn-warning" onclick="clearEmergencyRoute()">
+                                <i class="fas fa-road"></i> Clear Route
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zone Control Section -->
+            <div class="control-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-map-marker-alt"></i> Zone Control</h2>
+                </div>
+                
+                <div class="zone-controls">
+                    <div class="zone-option">
+                        <h3><i class="fas fa-school"></i> School Zone</h3>
+                        <p>Activate reduced speed limits near schools</p>
+                        <div class="toggle-group">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="school-zone-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Active</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-option">
+                        <h3><i class="fas fa-hard-hat"></i> Construction Zone</h3>
+                        <p>Manage traffic flow in construction areas</p>
+                        <div class="toggle-group">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="construction-zone-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Active</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-option">
+                        <h3><i class="fas fa-car"></i> Congestion Charge Zone</h3>
+                        <p>Manage congestion pricing zones</p>
+                        <div class="toggle-group">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="congestion-zone-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Override Section -->
+            <div class="control-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-cog"></i> Manual Override</h2>
+                </div>
+                
+                <div class="manual-controls">
+                    <div class="form-group">
+                        <label for="signal-select"><i class="fas fa-traffic-light"></i> Select Signal</label>
+                        <select id="signal-select" onchange="loadSignalDetails()">
+                            <option value="">Select a signal...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cycle-time"><i class="fas fa-clock"></i> Cycle Time (seconds)</label>
+                        <input type="range" id="cycle-time-slider" min="60" max="300" value="120" oninput="updateCycleTimeValue(this.value)">
+                        <div class="slider-value">
+                            <span id="cycle-time-value">120</span> seconds
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signal-mode"><i class="fas fa-cog"></i> Signal Mode</label>
+                        <select id="signal-mode">
+                            <option value="normal">Normal</option>
+                            <option value="flashing">Flashing Yellow</option>
+                            <option value="all-red">All Red</option>
+                            <option value="manual">Manual Control</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="applyManualControl()">
+                        <i class="fas fa-paper-plane"></i> Apply Changes
+                    </button>
+                </div>
+            </div>
+
+            <!-- System Logs -->
+            <div class="control-section full-width">
+                <div class="section-header">
+                    <h2><i class="fas fa-clipboard-list"></i> System Logs</h2>
+                    <button class="btn btn-secondary" onclick="clearLogs()">
+                        <i class="fas fa-trash"></i> Clear Logs
+                    </button>
+                </div>
+                
+                <div class="logs-container">
+                    <div class="logs-list" id="system-logs">
+                        <!-- System logs will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <style>
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-status {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(76, 201, 240, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(76, 201, 240, 0.3);
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .control-section {
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(67, 97, 238, 0.2);
+        }
+        
+        .control-section.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .signal-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .signal-control {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .signal-info h4 {
+            margin-bottom: 0.25rem;
+            color: var(--success);
+        }
+        
+        .signal-info p {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .signal-adjust {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .cycle-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .control-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .emergency-controls, .zone-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .emergency-option, .zone-option {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 10px;
+        }
+        
+        .emergency-option h3, .zone-option h3 {
+            margin-bottom: 0.5rem;
+            color: var(--warning);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .route-select {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .route-select select {
+            flex: 1;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: white;
+        }
+        
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .manual-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group label {
+            color: var(--success);
+            font-weight: 500;
+        }
+        
+        .form-group select, .form-group input[type="range"] {
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: white;
+        }
+        
+        .slider-value {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-top: 0.5rem;
+        }
+        
+        .logs-container {
+            height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        
+        .logs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .log-entry {
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            border-left: 4px solid var(--primary);
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry.info {
+            border-left-color: var(--success);
+        }
+        
+        .log-entry.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .log-entry.error {
+            border-left-color: var(--danger);
+        }
+        
+        .log-time {
+            color: var(--gray);
+            font-size: 0.8rem;
+            margin-right: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script>
+        class TrafficControl {
+            constructor() {
+                this.signals = [];
+                this.logs = [];
+                this.init();
+            }
+            
+            async init() {
+                await this.loadSignals();
+                this.populateSignalSelect();
+                this.loadSystemLogs();
+                setInterval(() => this.updateSignalStatus(), 5000);
+            }
+            
+            async loadSignals() {
+                try {
+                    const response = await fetch('/api/traffic-data');
+                    const data = await response.json();
+                    this.signals = data.signals;
+                    this.renderSignalControls();
+                } catch (error) {
+                    console.error('Error loading signals:', error);
+                }
+            }
+            
+            renderSignalControls() {
+                const container = document.getElementById('signal-controls-container');
+                if (!container) return;
+                
+                container.innerHTML = this.signals.map(signal => `
+                    <div class="signal-control">
+                        <div class="signal-info">
+                            <h4>${signal.location}</h4>
+                            <p>Status: <span class="status-${signal.status}">${signal.status.toUpperCase()}</span></p>
+                        </div>
+                        <div class="signal-adjust">
+                            <button class="btn btn-sm" onclick="trafficControl.decreaseCycleTime(${signal.id})">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <div class="cycle-display" id="cycle-${signal.id}">
+                                ${signal.cycle_time}s
+                            </div>
+                            <button class="btn btn-sm" onclick="trafficControl.increaseCycleTime(${signal.id})">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="trafficControl.applySignalChange(${signal.id})">
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            async decreaseCycleTime(signalId) {
+                const display = document.getElementById(`cycle-${signalId}`);
+                if (display) {
+                    let current = parseInt(display.textContent);
+                    if (current > 60) {
+                        display.textContent = `${current - 10}s`;
+                        this.addLog(`Decreased cycle time for signal ${signalId} to ${current - 10}s`, 'info');
+                    }
+                }
+            }
+            
+            async increaseCycleTime(signalId) {
+                const display = document.getElementById(`cycle-${signalId}`);
+                if (display) {
+                    let current = parseInt(display.textContent);
+                    if (current < 300) {
+                        display.textContent = `${current + 10}s`;
+                        this.addLog(`Increased cycle time for signal ${signalId} to ${current + 10}s`, 'info');
+                    }
+                }
+            }
+            
+            async applySignalChange(signalId) {
+                const display = document.getElementById(`cycle-${signalId}`);
+                if (display) {
+                    const cycleTime = parseInt(display.textContent);
+                    
+                    try {
+                        const response = await fetch('/api/update-signal', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                signal_id: signalId,
+                                cycle_time: cycleTime
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            this.addLog(`Successfully updated signal ${signalId} to ${cycleTime}s`, 'success');
+                            showNotification('Signal updated successfully', 'success');
+                        }
+                    } catch (error) {
+                        console.error('Error updating signal:', error);
+                        this.addLog(`Failed to update signal ${signalId}`, 'error');
+                        showNotification('Failed to update signal', 'error');
+                    }
+                }
+            }
+            
+            populateSignalSelect() {
+                const select = document.getElementById('signal-select');
+                if (!select) return;
+                
+                select.innerHTML = '<option value="">Select a signal...</option>' +
+                    this.signals.map(signal => 
+                        `<option value="${signal.id}">${signal.location}</option>`
+                    ).join('');
+            }
+            
+            loadSignalDetails() {
+                const select = document.getElementById('signal-select');
+                const signalId = parseInt(select.value);
+                
+                if (signalId) {
+                    const signal = this.signals.find(s => s.id === signalId);
+                    if (signal) {
+                        document.getElementById('cycle-time-slider').value = signal.cycle_time;
+                        document.getElementById('cycle-time-value').textContent = signal.cycle_time;
+                        document.getElementById('signal-mode').value = 'normal';
+                    }
+                }
+            }
+            
+            updateCycleTimeValue(value) {
+                document.getElementById('cycle-time-value').textContent = value;
+            }
+            
+            async applyManualControl() {
+                const signalId = parseInt(document.getElementById('signal-select').value);
+                const cycleTime = parseInt(document.getElementById('cycle-time-slider').value);
+                const mode = document.getElementById('signal-mode').value;
+                
+                if (!signalId) {
+                    showNotification('Please select a signal first', 'warning');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/update-signal', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            signal_id: signalId,
+                            cycle_time: cycleTime,
+                            mode: mode
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        this.addLog(`Manual control: Set signal ${signalId} to ${cycleTime}s (${mode} mode)`, 'success');
+                        showNotification('Manual control applied successfully', 'success');
+                    }
+                } catch (error) {
+                    console.error('Error applying manual control:', error);
+                    this.addLog(`Failed to apply manual control to signal ${signalId}`, 'error');
+                    showNotification('Failed to apply manual control', 'error');
+                }
+            }
+            
+            async optimizeAllSignals() {
+                try {
+                    // Simulate optimization
+                    for (const signal of this.signals) {
+                        const optimalTime = Math.max(90, Math.min(150, signal.cycle_time - 20));
+                        
+                        await fetch('/api/update-signal', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                signal_id: signal.id,
+                                cycle_time: optimalTime
+                            })
+                        });
+                    }
+                    
+                    this.addLog('Optimized all traffic signals', 'success');
+                    showNotification('All signals optimized successfully', 'success');
+                    await this.loadSignals();
+                } catch (error) {
+                    console.error('Error optimizing signals:', error);
+                    this.addLog('Failed to optimize signals', 'error');
+                    showNotification('Failed to optimize signals', 'error');
+                }
+            }
+            
+            async activateEmergencyMode() {
+                this.addLog('Emergency mode activated', 'warning');
+                showNotification('Emergency mode activated - Priority given to emergency vehicles', 'warning');
+                
+                // Flash emergency indicator
+                const statusDot = document.querySelector('.status-dot');
+                if (statusDot) {
+                    statusDot.style.background = 'var(--danger)';
+                    statusDot.style.animation = 'none';
+                    setInterval(() => {
+                        statusDot.style.opacity = statusDot.style.opacity === '0.5' ? '1' : '0.5';
+                    }, 500);
+                }
+            }
+            
+            async clearEmergencyRoute() {
+                const route = document.getElementById('emergency-route').value;
+                this.addLog(`Emergency route cleared: ${route}`, 'warning');
+                showNotification(`Emergency route to ${route} cleared`, 'success');
+            }
+            
+            loadSystemLogs() {
+                const logsContainer = document.getElementById('system-logs');
+                if (!logsContainer) return;
+                
+                // Add initial logs
+                this.addLog('Traffic control system initialized', 'info');
+                this.addLog('Connected to signal network', 'success');
+                this.addLog('Emergency systems ready', 'info');
+                
+                this.renderLogs();
+            }
+            
+            addLog(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                this.logs.unshift({
+                    timestamp,
+                    message,
+                    type
+                });
+                
+                // Keep only last 50 logs
+                if (this.logs.length > 50) {
+                    this.logs.pop();
+                }
+                
+                this.renderLogs();
+            }
+            
+            renderLogs() {
+                const container = document.getElementById('system-logs');
+                if (!container) return;
+                
+                container.innerHTML = this.logs.map(log => `
+                    <div class="log-entry ${log.type}">
+                        <span class="log-time">[${log.timestamp}]</span>
+                        ${log.message}
+                    </div>
+                `).join('');
+            }
+            
+            clearLogs() {
+                this.logs = [];
+                this.addLog('Logs cleared', 'info');
+                showNotification('System logs cleared', 'info');
+            }
+            
+            updateSignalStatus() {
+                this.loadSignals();
+            }
+            
+            resetToDefault() {
+                this.addLog('Resetting all signals to default configuration', 'info');
+                showNotification('Resetting signals to default...', 'info');
+                
+                // In real implementation, make API call to reset all signals
+                setTimeout(() => {
+                    this.addLog('All signals reset to default configuration', 'success');
+                    showNotification('All signals reset successfully', 'success');
+                }, 2000);
+            }
+            
+            enableAutoMode() {
+                this.addLog('Auto-optimization mode enabled', 'success');
+                showNotification('Auto-optimization mode enabled', 'success');
+                
+                // In real implementation, enable continuous optimization
+                setInterval(() => {
+                    if (Math.random() > 0.7) { // 30% chance to auto-optimize
+                        this.optimizeAllSignals();
+                    }
+                }, 30000); // Check every 30 seconds
+            }
+        }
+        
+        // Initialize traffic control
+        const trafficControl = new TrafficControl();
+        
+        // Helper function for notifications
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}</span>
+                    <span class="notification-message">${message}</span>
+                </div>
+            `;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                background: ${type === 'success' ? 'rgba(76, 201, 240, 0.9)' : 
+                           type === 'error' ? 'rgba(247, 37, 133, 0.9)' : 
+                           'rgba(67, 97, 238, 0.9)'};
+                color: white;
+                padding: 1rem;
+                border-radius: 10px;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                max-width: 300px;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+            
+            // Add CSS for animations
+            if (!document.getElementById('notification-animations')) {
+                const style = document.createElement('style');
+                style.id = 'notification-animations';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+        
+        // Make functions global
+        window.trafficControl = trafficControl;
+        window.showNotification = showNotification;
+        
+        // Helper functions for global access
+        window.enableAutoMode = () => trafficControl.enableAutoMode();
+        window.optimizeAllSignals = () => trafficControl.optimizeAllSignals();
+        window.resetToDefault = () => trafficControl.resetToDefault();
+        window.activateEmergencyMode = () => trafficControl.activateEmergencyMode();
+        window.clearEmergencyRoute = () => trafficControl.clearEmergencyRoute();
+        window.clearLogs = () => trafficControl.clearLogs();
+        window.loadSignalDetails = () => trafficControl.loadSignalDetails();
+        window.updateCycleTimeValue = (value) => trafficControl.updateCycleTimeValue(value);
+        window.applyManualControl = () => trafficControl.applyManualControl();
+    </script>
+</body>
+</html>

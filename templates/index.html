@@ -1,0 +1,261 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Ranger AI - Traffic Prediction & Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-traffic-light"></i>
+            </div>
+            <div class="logo-text">Road Ranger AI</div>
+        </div>
+        
+        <ul class="nav-links">
+            <li><a href="/" class="active"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="/traffic-map"><i class="fas fa-map-marked-alt"></i> Traffic Map</a></li>
+            <li><a href="/predictions"><i class="fas fa-chart-line"></i> Predictions</a></li>
+            <li><a href="/traffic-control"><i class="fas fa-cogs"></i> Control Panel</a></li>
+            <li><a href="/reports"><i class="fas fa-file-alt"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Intelligent Traffic Management System</h1>
+            <p>Real-time traffic prediction, optimization, and control using advanced AI/ML algorithms. Reduce congestion, improve safety, and optimize urban mobility.</p>
+            <a href="/dashboard" class="cta-button">
+                <i class="fas fa-rocket"></i> Launch Dashboard
+            </a>
+        </section>
+
+        <!-- Quick Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Average Congestion</div>
+                <div class="stat-value" id="avg-congestion">--%</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 2.5% from yesterday
+                </div>
+            </div>
+            
+            <div class="stat-card medium-congestion">
+                <div class="stat-title">Active Signals</div>
+                <div class="stat-value" id="total-signals">--</div>
+                <div class="stat-label" id="congestion-level">Medium</div>
+            </div>
+            
+            <div class="stat-card high-congestion">
+                <div class="stat-title">Congested Areas</div>
+                <div class="stat-value" id="congested-signals">--</div>
+                <div class="stat-change negative">
+                    <i class="fas fa-exclamation-triangle"></i> Immediate attention needed
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-title">Prediction Accuracy</div>
+                <div class="stat-value">94.2%</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-check-circle"></i> High confidence
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Preview -->
+        <div class="chart-container">
+            <h2><i class="fas fa-map"></i> Live Traffic Map</h2>
+            <div class="map-container" id="traffic-map">
+                <!-- Traffic map will be loaded here -->
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h3>AI Prediction</h3>
+                <p>Advanced machine learning models predict traffic patterns hours in advance with 94% accuracy.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-route"></i>
+                </div>
+                <h3>Route Optimization</h3>
+                <p>Dynamic routing algorithms suggest optimal paths based on real-time traffic conditions.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-traffic-light"></i>
+                </div>
+                <h3>Smart Signals</h3>
+                <p>Adaptive traffic signal control reduces waiting times by up to 40%.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+                <h3>Computer Vision</h3>
+                <p>Real-time vehicle detection and counting from CCTV feeds for accurate monitoring.</p>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h2>Quick Actions</h2>
+            <div class="action-buttons">
+                <button class="action-btn" onclick="window.location.href='/predictions'">
+                    <i class="fas fa-chart-line"></i> View Predictions
+                </button>
+                <button class="action-btn" onclick="window.location.href='/traffic-control'">
+                    <i class="fas fa-cogs"></i> Control Signals
+                </button>
+                <button class="action-btn" onclick="trafficDashboard.generateReport()">
+                    <i class="fas fa-file-pdf"></i> Generate Report
+                </button>
+                <button class="action-btn" onclick="trafficDashboard.showEmergencyProtocol()">
+                    <i class="fas fa-ambulance"></i> Emergency Protocol
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add CSS for additional components
+            const style = document.createElement('style');
+            style.textContent = `
+                .features-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 1.5rem;
+                    margin: 2rem 0;
+                }
+                
+                .feature-card {
+                    background: rgba(26, 26, 46, 0.8);
+                    padding: 2rem;
+                    border-radius: 15px;
+                    text-align: center;
+                    transition: transform 0.3s ease;
+                    border: 1px solid rgba(67, 97, 238, 0.2);
+                }
+                
+                .feature-card:hover {
+                    transform: translateY(-5px);
+                    border-color: var(--primary);
+                }
+                
+                .feature-icon {
+                    font-size: 3rem;
+                    color: var(--primary);
+                    margin-bottom: 1rem;
+                }
+                
+                .quick-actions {
+                    background: rgba(26, 26, 46, 0.8);
+                    padding: 2rem;
+                    border-radius: 15px;
+                    margin: 2rem 0;
+                }
+                
+                .action-buttons {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 1rem;
+                    margin-top: 1rem;
+                }
+                
+                .action-btn {
+                    background: linear-gradient(45deg, var(--primary), var(--info));
+                    color: white;
+                    border: none;
+                    padding: 1rem;
+                    border-radius: 10px;
+                    font-size: 1rem;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
+                }
+                
+                .action-btn:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+                }
+                
+                .map-canvas {
+                    width: 100%;
+                    height: 100%;
+                    background: #1a1a2e;
+                    position: relative;
+                }
+                
+                .traffic-marker {
+                    position: absolute;
+                    transform: translate(-50%, -50%);
+                    z-index: 10;
+                }
+                
+                .marker-circle {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    transition: transform 0.3s ease;
+                }
+                
+                .marker-circle:hover {
+                    transform: scale(1.2);
+                }
+                
+                .marker-label {
+                    position: absolute;
+                    top: 100%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 4px;
+                    font-size: 0.75rem;
+                    white-space: nowrap;
+                    margin-top: 5px;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                }
+                
+                .traffic-marker:hover .marker-label {
+                    opacity: 1;
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>

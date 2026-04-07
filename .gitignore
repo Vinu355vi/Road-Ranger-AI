@@ -1,0 +1,67 @@
+# ------------------------------
+# Python cache and bytecode
+# ------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ------------------------------
+# Virtual environments
+# ------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# ------------------------------
+# Local environment and secrets
+# Keep .env.example if you add one for template values
+# ------------------------------
+.env
+.env.*
+!.env.example
+
+# ------------------------------
+# Testing and coverage artifacts
+# ------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# ------------------------------
+# Build/distribution artifacts
+# ------------------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ------------------------------
+# Logs and runtime files
+# ------------------------------
+*.log
+*.pid
+
+# ------------------------------
+# Editor and OS files
+# ------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ------------------------------
+# Vercel local project metadata (GitHub->Vercel deploy)
+# ------------------------------
+.vercel/
+
+# ------------------------------
+# Jupyter/notebook checkpoints (if used)
+# ------------------------------
+.ipynb_checkpoints/
+
+# ------------------------------
+# Large local artifacts
+# ------------------------------
+*.mp4

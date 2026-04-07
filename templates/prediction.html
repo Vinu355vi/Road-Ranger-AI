@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictions - Road Ranger AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-traffic-light"></i>
+            </div>
+            <div class="logo-text">Road Ranger AI</div>
+        </div>
+        
+        <ul class="nav-links">
+            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="/traffic-map"><i class="fas fa-map-marked-alt"></i> Traffic Map</a></li>
+            <li><a href="/predictions" class="active"><i class="fas fa-chart-line"></i> Predictions</a></li>
+            <li><a href="/traffic-control"><i class="fas fa-cogs"></i> Control Panel</a></li>
+            <li><a href="/reports"><i class="fas fa-file-alt"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="predictions-header">
+            <h1><i class="fas fa-chart-line"></i> AI Traffic Predictions</h1>
+            <div class="prediction-controls">
+                <div class="model-info">
+                    <span class="model-status active">
+                        <i class="fas fa-circle"></i> Model Active
+                    </span>
+                    <span class="accuracy">Accuracy: 94.2%</span>
+                </div>
+                <button class="btn btn-primary" onclick="retrainModel()">
+                    <i class="fas fa-sync-alt"></i> Retrain Model
+                </button>
+            </div>
+        </div>
+
+        <div class="predictions-grid">
+            <!-- Real-time Predictions -->
+            <div class="prediction-card large">
+                <div class="card-header">
+                    <h3><i class="fas fa-clock"></i> Real-time Predictions</h3>
+                    <div class="time-selector">
+                        <label>Predict for:</label>
+                        <select id="prediction-horizon" onchange="updatePredictions()">
+                            <option value="1">1 hour</option>
+                            <option value="3">3 hours</option>
+                            <option value="6" selected>6 hours</option>
+                            <option value="12">12 hours</option>
+                            <option value="24">24 hours</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="prediction-chart-container">
+                        <canvas id="real-time-prediction-chart"></canvas>
+                    </div>
+                    <div class="prediction-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Peak Congestion:</span>
+                            <span class="stat-value" id="peak-congestion">--%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Peak Time:</span>
+                            <span class="stat-value" id="peak-time">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Confidence:</span>
+                            <span class="stat-value" id="prediction-confidence">--%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location-based Predictions -->
+            <div class="prediction-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-map-marker-alt"></i> Location Predictions</h3>
+                </div>
+                <div class="card-content">
+                    <div class="location-selector">
+                        <select id="location-select" onchange="loadLocationPredictions()">
+                            <option value="">Select location...</option>
+                            <option value="downtown">Downtown Intersection</option>
+                            <option value="highway">Highway Exit</option>
+                            <option value="suburbs">Suburb Junction</option>
+                            <option value="bridge">Bridge Approach</option>
+                            <option value="commercial">Commercial District</option>
+                        </select>
+                    </div>
+                    <div class="location-predictions" id="location-predictions">
+                        <!-- Location predictions will appear here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pattern Analysis -->
+            <div class="prediction-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-wave-square"></i> Pattern Analysis</h3>
+                </div>
+                <div class="card-content">
+                    <div class="pattern-analysis">
+                        <div class="pattern-item">
+                            <div class="pattern-label">Daily Pattern</div>
+                            <div class="pattern-bar">
+                                <div class="pattern-fill morning"></div>
+                                <span>AM Peak</span>
+                            </div>
+                        </div>
+                        <div class="pattern-item">
+                            <div class="pattern-label">Weekly Pattern</div>
+                            <div class="pattern-bar">
+                                <div class="pattern-fill weekday"></div>
+                                <span>Weekday</span>
+                            </div>
+                        </div>
+                        <div class="pattern-item">
+                            <div class="pattern-label">Seasonal Trend</div>
+                            <div class="pattern-bar">
+                                <div class="pattern-fill seasonal"></div>
+                                <span>Increasing</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insights">
+                        <h4><i class="fas fa-lightbulb"></i> Key Insights</h4>
+                        <ul class="insights-list">
+                            <li>Peak traffic occurs 8-9 AM & 5-6 PM</li>
+                            <li>Weekends show 30% less congestion</li>
+                            <li>Rain increases congestion by 25%</li>
+                            <li>Events cause localized congestion spikes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weather Impact -->
+            <div class="prediction-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-cloud-sun"></i> Weather Impact</h3>
+                </div>
+                <div class="card-content">
+                    <div class="weather-impact">
+                        <div class="weather-condition">
+                            <div class="weather-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <div class="weather-info">
+                                <div class="condition">Sunny</div>
+                                <div class="impact">-15% congestion</div>
+                            </div>
+                        </div>
+                        <div class="weather-condition">
+                            <div class="weather-icon">
+                                <i class="fas fa-cloud-rain"></i>
+                            </div>
+                            <div class="weather-info">
+                                <div class="condition">Rain</div>
+                                <div class="impact">+25% congestion</div>
+                            </div>
+                        </div>
+                        <div class="weather-condition">
+                            <div class="weather-icon">
+                                <i class="fas fa-snowflake"></i>
+                            </div>
+                            <div class="weather-info">
+                                <div class="condition">Snow</div>
+                                <div class="impact">+40% congestion</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="weather-forecast">
+                        <h4>7-Day Forecast Impact</h4>
+                        <canvas id="weather-impact-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event-based Predictions -->
+            <div class="prediction-card large">
+                <div class="card-header">
+                    <h3><i class="fas fa-calendar-alt"></i> Event-based Predictions</h3>
+                    <button class="btn btn-secondary" onclick="addEvent()">
+                        <i class="fas fa-plus"></i> Add Event
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="events-list">
+                        <div class="event-item">
+                            <div class="event-header">
+                                <h4><i class="fas fa-baseball-ball"></i> Baseball Game</h4>
+                                <span class="event-time">Today, 7:00 PM</span>
+                            </div>
+                            <div class="event-impact">
+                                <span class="impact-label">Expected Impact:</span>
+                                <span class="impact-value high">+45% congestion</span>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-sm" onclick="viewEventDetails(1)">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                                <button class="btn btn-sm" onclick="planForEvent(1)">
+                                    <i class="fas fa-route"></i> Plan Routes
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="event-item">
+                            <div class="event-header">
+                                <h4><i class="fas fa-road"></i> Road Construction</h4>
+                                <span class="event-time">Weekdays, 9 AM - 4 PM</span>
+                            </div>
+                            <div class="event-impact">
+                                <span class="impact-label">Expected Impact:</span>
+                                <span class="impact-value medium">+30% congestion</span>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-sm" onclick="viewEventDetails(2)">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                                <button class="btn btn-sm" onclick="planForEvent(2)">
+                                    <i class="fas fa-route"></i> Plan Routes
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="event-item">
+                            <div class="event-header">
+                                <h4><i class="fas fa-music"></i> Music Festival</h4>
+                                <span class="event-time">Weekend, All Day</span>
+                            </div>
+                            <div class="event-impact">
+                                <span class="impact-label">Expected Impact:</span>
+                                <span class="impact-value high">+60% congestion</span>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-sm" onclick="viewEventDetails(3)">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                                <button class="btn btn-sm" onclick="planForEvent(3)">
+                                    <i class="fas fa-route"></i> Plan Routes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Performance -->
+            <div class="prediction-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-bar"></i> Model Performance</h3>
+                </div>
+                <div class="card-content">
+                    <div class="performance-metrics">
+                        <div class="metric">
+                            <div class="metric-value">94.2%</div>
+                            <div class="metric-label">Accuracy</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">92.8%</div>
+                            <div class="metric-label">Precision</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">95.1%</div>
+                            <div class="metric-label">Recall</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">0.91</div>
+                            <div class="metric-label">F1 Score</div>
+                        </div>
+                    </div>
+                    <div class="training-info">
+                        <h4>Last Training</h4>
+                        <p>Completed: 2 hours ago</p>
+                        <p>Data points: 1.2M</p>
+                        <p>Training time: 45 minutes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Add Event Modal -->
+    <div class="modal" id="add-event-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-plus"></i> Add Traffic Event</h3>
+                <button class="modal-close" onclick="closeModal('add-event-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-event-form" onsubmit="handleEventSubmit(event)">
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" placeholder="e.g. Baseball Game, Road Work" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Event Type</label>
+                        <select>
+                            <option value="sports">Sports Event</option>
+                            <option value="concert">Concert/Festival</option>
+                            <option value="construction">Construction</option>
+                            <option value="accident">Accident/Incident</option>
+                            <option value="weather">Weather Event</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <select>
+                            <option value="downtown">Downtown Intersection</option>
+                            <option value="stadium">City Stadium</option>
+                            <option value="highway">Highway I-95</option>
+                            <option value="bridge">Main Bridge</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date & Time</label>
+                        <input type="datetime-local" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Expected Duration (hours)</label>
+                        <input type="number" min="1" max="72" value="2">
+                    </div>
+                    <div class="form-group">
+                        <label>Severity Impact</label>
+                        <select>
+                            <option value="low">Low (10-20% Traffic Increase)</option>
+                            <option value="medium">Medium (30-50% Traffic Increase)</option>
+                            <option value="high">High (>60% Traffic Increase)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%">
+                        <i class="fas fa-save"></i> Save Event
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Details Modal -->
+    <div class="modal" id="event-details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> Event Details</h3>
+                <button class="modal-close" onclick="closeModal('event-details-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="event-detail-view" id="event-detail-content">
+                    <!-- Content populated by JS -->
+                </div>
+                <div class="modal-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button class="btn btn-primary" style="flex: 1" onclick="closeModal('event-details-modal'); planForEvent(currentEventId)">
+                        <i class="fas fa-route"></i> Plan Routes
+                    </button>
+                    <button class="btn btn-secondary" style="flex: 1" onclick="closeModal('event-details-modal')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <style>
+        .predictions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .prediction-controls {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        
+        .model-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .model-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(76, 201, 240, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(76, 201, 240, 0.3);
+        }
+        
+        .model-status i {
+            color: var(--success);
+            font-size: 0.8rem;
+        }
+        
+        .accuracy {
+            color: var(--success);
+            font-weight: 600;
+        }
+        
+        .predictions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .prediction-card {
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(67, 97, 238, 0.2);
+        }
+        
+        .prediction-card.large {
+            grid-column: span 2;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .time-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .time-selector select {
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: white;
+        }
+        
+        .prediction-chart-container {
+            height: 200px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .prediction-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            text-align: center;
+        }
+        
+        .stat-item {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .stat-label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .location-selector {
+            margin-bottom: 1.5rem;
+        }
+        
+        .location-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+        }
+        
+        .location-predictions {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .pattern-analysis {
+            margin-bottom: 1.5rem;
+        }
+        
+        .pattern-item {
+            margin-bottom: 1rem;
+        }
+        
+        .pattern-label {
+            margin-bottom: 0.5rem;
+            color: var(--success);
+        }
+        
+        .pattern-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .pattern-fill {
+            flex: 1;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .pattern-fill.morning {
+            width: 80%;
+            background: linear-gradient(90deg, var(--primary), var(--info));
+        }
+        
+        .pattern-fill.weekday {
+            width: 70%;
+            background: linear-gradient(90deg, var(--info), var(--success));
+        }
+        
+        .pattern-fill.seasonal {
+            width: 60%;
+            background: linear-gradient(90deg, var(--success), var(--warning));
+        }
+        
+        .insights h4 {
+            margin-bottom: 1rem;
+            color: var(--warning);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .insights-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .insights-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .insights-list li:before {
+            content: "•";
+            color: var(--success);
+            font-size: 1.5rem;
+        }
+        
+        .weather-impact {
+            margin-bottom: 1.5rem;
+        }
+        
+        .weather-condition {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .weather-icon {
+            font-size: 2rem;
+            color: var(--warning);
+        }
+        
+        .weather-info {
+            flex: 1;
+        }
+        
+        .condition {
+            font-weight: 600;
+            color: var(--light);
+        }
+        
+        .impact {
+            font-size: 0.9rem;
+            color: var(--success);
+        }
+        
+        .weather-forecast {
+            margin-top: 1.5rem;
+        }
+        
+        .weather-forecast h4 {
+            margin-bottom: 1rem;
+            color: var(--info);
+        }
+        
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .event-item {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .event-header h4 {
+            color: var(--warning);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .event-time {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .event-impact {
+            margin-bottom: 1rem;
+        }
+        
+        .impact-label {
+            color: var(--gray);
+            margin-right: 0.5rem;
+        }
+        
+        .impact-value {
+            font-weight: 600;
+        }
+        
+        .impact-value.high {
+            color: var(--danger);
+        }
+        
+        .impact-value.medium {
+            color: var(--warning);
+        }
+        
+        .impact-value.low {
+            color: var(--success);
+        }
+        
+        .event-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .performance-metrics .metric {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .training-info {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .training-info h4 {
+            margin-bottom: 1rem;
+            color: var(--info);
+        }
+        
+        .training-info p {
+            margin-bottom: 0.5rem;
+            color: var(--gray);
+        }
+        
+        @media (max-width: 768px) {
+            .predictions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .prediction-card.large {
+                grid-column: span 1;
+            }
+        }
+    </style>
+    <script>
+        class PredictionsManager {
+            constructor() {
+                this.currentPredictions = [];
+                this.charts = {};
+                this.init();
+            }
+            
+            init() {
+                this.loadRealTimePredictions();
+                this.initCharts();
+                this.setupEventListeners();
+            }
+            
+            async loadRealTimePredictions() {
+                try {
+                    const horizon = document.getElementById('prediction-horizon').value;
+                    const response = await fetch('/api/predict-congestion', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ hours: parseInt(horizon) })
+                    });
+                    
+                    const data = await response.json();
+                    this.currentPredictions = data.predictions;
+                    this.updatePredictionChart();
+                    this.updatePredictionStats(data);
+                } catch (error) {
+                    console.error('Error loading predictions:', error);
+                    // Use sample data if API fails
+                    this.useSamplePredictions();
+                }
+            }
+            
+            useSamplePredictions() {
+                const horizon = parseInt(document.getElementById('prediction-horizon').value);
+                this.currentPredictions = Array.from({length: horizon}, (_, i) => {
+                    // Simulate typical daily pattern
+                    const hour = (new Date().getHours() + i + 1) % 24;
+                    let congestion = 50;
+                    
+                    if (hour >= 7 && hour <= 9) congestion = 85; // Morning peak
+                    else if (hour >= 16 && hour <= 18) congestion = 90; // Evening peak
+                    else if (hour >= 12 && hour <= 14) congestion = 70; // Lunch time
+                    else if (hour >= 22 || hour <= 5) congestion = 30; // Night
+                    else congestion = 60; // Other times
+                    
+                    return congestion + Math.random() * 10 - 5; // Add some noise
+                });
+                
+                this.updatePredictionChart();
+                this.updatePredictionStats({
+                    confidence: Math.floor(Math.random() * 15) + 80 // 80-95%
+                });
+            }
+            
+            updatePredictionChart() {
+                const ctx = document.getElementById('real-time-prediction-chart');
+                if (!ctx) return;
+                
+                const labels = this.currentPredictions.map((_, i) => `T+${i + 1}h`);
+                
+                if (this.charts.realTime) {
+                    this.charts.realTime.data.labels = labels;
+                    this.charts.realTime.data.datasets[0].data = this.currentPredictions;
+                    this.charts.realTime.update();
+                } else {
+                    this.charts.realTime = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Predicted Congestion (%)',
+                                data: this.currentPredictions,
+                                borderColor: '#f72585',
+                                backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: '#fff'
+                                    }
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    ticks: {
+                                        color: '#fff',
+                                        callback: function(value) {
+                                            return value + '%';
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#fff'
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            updatePredictionStats(data) {
+                if (this.currentPredictions.length > 0) {
+                    const peakCongestion = Math.max(...this.currentPredictions);
+                    const peakIndex = this.currentPredictions.indexOf(peakCongestion);
+                    const peakTime = `T+${peakIndex + 1}h`;
+                    
+                    document.getElementById('peak-congestion').textContent = `${peakCongestion.toFixed(1)}%`;
+                    document.getElementById('peak-time').textContent = peakTime;
+                    document.getElementById('prediction-confidence').textContent = `${data.confidence || 92}%`;
+                }
+            }
+            
+            initCharts() {
+                // Initialize weather impact chart
+                const weatherCtx = document.getElementById('weather-impact-chart');
+                if (weatherCtx) {
+                    this.charts.weather = new Chart(weatherCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                            datasets: [{
+                                label: 'Congestion Impact (%)',
+                                data: [15, 25, 10, 30, 20, 5, 10],
+                                backgroundColor: [
+                                    'rgba(76, 201, 240, 0.7)',
+                                    'rgba(247, 37, 133, 0.7)',
+                                    'rgba(76, 201, 240, 0.7)',
+                                    'rgba(248, 150, 30, 0.7)',
+                                    'rgba(76, 201, 240, 0.7)',
+                                    'rgba(67, 97, 238, 0.7)',
+                                    'rgba(67, 97, 238, 0.7)'
+                                ],
+                                borderColor: '#fff',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: '#fff',
+                                        callback: function(value) {
+                                            return value + '%';
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#fff'
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            async loadLocationPredictions() {
+                const location = document.getElementById('location-select').value;
+                if (!location) return;
+                
+                const container = document.getElementById('location-predictions');
+                
+                // Show loading
+                container.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading predictions for ${location}...</p>
+                    </div>
+                `;
+                
+                // Simulate API call
+                setTimeout(() => {
+                    const predictions = this.generateLocationPredictions(location);
+                    container.innerHTML = `
+                        <div class="location-details">
+                            <h4>${this.getLocationName(location)}</h4>
+                            <div class="current-status">
+                                <span class="status-label">Current:</span>
+                                <span class="status-value ${predictions.current > 70 ? 'high' : predictions.current > 40 ? 'medium' : 'low'}">
+                                    ${predictions.current}% congestion
+                                </span>
+                            </div>
+                            <div class="prediction-timeline">
+                                <h5>Next 6 Hours:</h5>
+                                <div class="timeline">
+                                    ${predictions.hourly.map((pred, i) => `
+                                        <div class="timeline-item">
+                                            <span class="time">T+${i + 1}h</span>
+                                            <div class="congestion-bar">
+                                                <div class="bar-fill" style="width: ${pred}%"></div>
+                                            </div>
+                                            <span class="value">${pred}%</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="recommendations">
+                                <h5>Recommendations:</h5>
+                                <ul>
+                                    ${predictions.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                }, 1000);
+            }
+            
+            generateLocationPredictions(location) {
+                const patterns = {
+                    'downtown': {
+                        current: 75,
+                        hourly: [78, 85, 90, 88, 80, 75],
+                        recommendations: [
+                            'Increase green light duration on Main Street',
+                            'Divert traffic to alternative routes',
+                            'Activate dynamic lane allocation'
+                        ]
+                    },
+                    'highway': {
+                        current: 60,
+                        hourly: [65, 70, 75, 72, 68, 62],
+                        recommendations: [
+                            'Adjust ramp metering rates',
+                            'Increase speed limit monitoring',
+                            'Prepare for incident response'
+                        ]
+                    },
+                    'suburbs': {
+                        current: 45,
+                        hourly: [50, 55, 60, 58, 52, 48],
+                        recommendations: [
+                            'Normal operation',
+                            'Monitor school zone timing',
+                            'Adjust for commuter patterns'
+                        ]
+                    }
+                };
+                
+                return patterns[location] || {
+                    current: 50,
+                    hourly: [55, 60, 65, 62, 58, 53],
+                    recommendations: ['Monitor traffic flow', 'Adjust signals as needed']
+                };
+            }
+            
+            getLocationName(location) {
+                const names = {
+                    'downtown': 'Downtown Intersection',
+                    'highway': 'Highway Exit 5',
+                    'suburbs': 'Suburb Junction',
+                    'bridge': 'Bridge Approach',
+                    'commercial': 'Commercial District'
+                };
+                return names[location] || location;
+            }
+            
+            setupEventListeners() {
+                document.getElementById('prediction-horizon').addEventListener('change', () => {
+                    this.loadRealTimePredictions();
+                });
+                
+                document.getElementById('location-select').addEventListener('change', () => {
+                    this.loadLocationPredictions();
+                });
+            }
+            
+            updatePredictions() {
+                this.loadRealTimePredictions();
+            }
+        }
+        
+        // Initialize predictions manager
+        const predictionsManager = new PredictionsManager();
+        
+        // Global functions
+        let currentEventId = null;
+
+        function retrainModel() {
+            showNotification('Retraining AI model with latest data...', 'info');
+            setTimeout(() => {
+                showNotification('Model retrained successfully! Accuracy improved to 94.5%', 'success');
+            }, 3000);
+        }
+        
+        function addEvent() {
+            openModal('add-event-modal');
+        }
+        
+        function handleEventSubmit(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                showNotification('Event added successfully! Predictions updated.', 'success');
+                closeModal('add-event-modal');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                e.target.reset();
+                
+                // Add new event to list (Simulated)
+                const eventsList = document.querySelector('.events-list');
+                const newEvent = document.createElement('div');
+                newEvent.className = 'event-item';
+                newEvent.style.animation = 'fadeIn 0.5s ease';
+                newEvent.innerHTML = `
+                    <div class="event-header">
+                        <h4><i class="fas fa-calendar-check"></i> New Traffic Event</h4>
+                        <span class="event-time">Upcoming</span>
+                    </div>
+                    <div class="event-impact">
+                        <span class="impact-label">Expected Impact:</span>
+                        <span class="impact-value medium">+35% congestion</span>
+                    </div>
+                    <div class="event-actions">
+                        <button class="btn btn-sm" onclick="viewEventDetails(99)">
+                            <i class="fas fa-info-circle"></i> Details
+                        </button>
+                        <button class="btn btn-sm" onclick="planForEvent(99)">
+                            <i class="fas fa-route"></i> Plan Routes
+                        </button>
+                    </div>
+                `;
+                eventsList.insertBefore(newEvent, eventsList.firstChild);
+            }, 1000);
+        }
+        
+        function viewEventDetails(eventId) {
+            currentEventId = eventId;
+            const content = document.getElementById('event-detail-content');
+            
+            // Simulate fetching details
+            let title = 'Unknown Event';
+            let impact = 'Unknown';
+            let icon = 'fa-calendar';
+            
+            if (eventId === 1) {
+                title = 'Baseball Game';
+                impact = '+45%';
+                icon = 'fa-baseball-ball';
+            } else if (eventId === 2) {
+                title = 'Road Construction';
+                impact = '+30%';
+                icon = 'fa-road';
+            } else if (eventId === 3) {
+                title = 'Music Festival';
+                impact = '+60%';
+                icon = 'fa-music';
+            } else {
+                title = 'New Traffic Event';
+                impact = '+35%';
+                icon = 'fa-calendar-check';
+            }
+            
+            content.innerHTML = `
+                <div class="detail-header" style="text-align: center; margin-bottom: 2rem;">
+                    <div class="detail-icon" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <h2>${title}</h2>
+                    <div class="badge" style="background: rgba(247, 37, 133, 0.2); color: var(--danger); display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; margin-top: 0.5rem;">
+                        High Impact Anticipated
+                    </div>
+                </div>
+                
+                <div class="detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="detail-item" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px;">
+                        <label style="display: block; color: var(--gray); font-size: 0.8rem; margin-bottom: 0.25rem;">Congestion Impact</label>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--danger);">${impact} increase</div>
+                    </div>
+                    <div class="detail-item" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px;">
+                        <label style="display: block; color: var(--gray); font-size: 0.8rem; margin-bottom: 0.25rem;">Affected Area</label>
+                        <div style="font-size: 1.2rem;">2.5 mile radius</div>
+                    </div>
+                    <div class="detail-item" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px;">
+                        <label style="display: block; color: var(--gray); font-size: 0.8rem; margin-bottom: 0.25rem;">Start Time</label>
+                        <div style="font-size: 1.1rem;">Today, 18:00</div>
+                    </div>
+                    <div class="detail-item" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px;">
+                        <label style="display: block; color: var(--gray); font-size: 0.8rem; margin-bottom: 0.25rem;">End Time</label>
+                        <div style="font-size: 1.1rem;">Today, 22:30</div>
+                    </div>
+                </div>
+                
+                <div class="ai-insight" style="margin-top: 1.5rem; padding: 1rem; background: rgba(67, 97, 238, 0.1); border-left: 4px solid var(--primary); border-radius: 0 5px 5px 0;">
+                    <h5 style="margin-bottom: 0.5rem; color: var(--primary);"><i class="fas fa-robot"></i> AI Prediction</h5>
+                    <p style="font-size: 0.9rem; line-height: 1.5;">Based on historical data from similar events, traffic will peak 45 minutes before the event starts. Alternative routes via Highway 4 are recommended.</p>
+                </div>
+            `;
+            
+            openModal('event-details-modal');
+        }
+        
+        function planForEvent(eventId) {
+            // Close modal if open
+            closeModal('event-details-modal');
+            
+            showNotification(`Generating optimal traffic plan for Event #${eventId}...`, 'info');
+            setTimeout(() => {
+                window.location.href = '/traffic-control';
+            }, 1500);
+        }
+        
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            if (window.trafficDashboard && typeof window.trafficDashboard.showNotification === 'function') {
+                window.trafficDashboard.showNotification(message, type);
+                return;
+            }
+
+            // Fallback implementation if trafficDashboard is not available
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}</span>
+                    <span class="notification-message">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+        
+        // Make functions global
+        window.predictionsManager = predictionsManager;
+        window.updatePredictions = () => predictionsManager.updatePredictions();
+        window.loadLocationPredictions = () => predictionsManager.loadLocationPredictions();
+        window.retrainModel = retrainModel;
+        window.addEvent = addEvent;
+        window.viewEventDetails = viewEventDetails;
+        window.planForEvent = planForEvent;
+    </script>
+</body>
+</html>

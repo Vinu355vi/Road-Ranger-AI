@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Map - Road Ranger AI</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚦</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        /* Fix for map tiles in dark mode */
+        .leaflet-tile {
+            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-traffic-light"></i>
+            </div>
+            <div class="logo-text">Road Ranger AI</div>
+        </div>
+        
+        <ul class="nav-links">
+            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="/traffic-map" class="active"><i class="fas fa-map-marked-alt"></i> Traffic Map</a></li>
+            <li><a href="/predictions"><i class="fas fa-chart-line"></i> Predictions</a></li>
+            <li><a href="/traffic-control"><i class="fas fa-cogs"></i> Control Panel</a></li>
+            <li><a href="/reports"><i class="fas fa-file-alt"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        <div class="map-header">
+            <h1><i class="fas fa-map-marked-alt"></i> Live Traffic Map</h1>
+            <div class="map-controls">
+                <div class="control-group">
+                    <button class="btn btn-primary" onclick="trafficMap.refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-secondary" onclick="trafficMap.exportMapAsImage()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="btn btn-secondary" onclick="trafficMap.printMap()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-layout">
+            <!-- Map Container -->
+            <div class="map-main">
+                <div class="map-container">
+                    <div id="traffic-map-container" style="height: 100%; width: 100%;"></div>
+                </div>
+                
+                <!-- Map Overlay Controls -->
+                <div class="map-overlay-controls">
+                    <div class="overlay-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="traffic-layer-toggle" checked 
+                                   onchange="trafficMap.toggleLayer('traffic')">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Traffic Markers</span>
+                        </label>
+                    </div>
+                    
+                    <div class="overlay-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="heatmap-layer-toggle"
+                                   onchange="trafficMap.toggleLayer('heatmap')">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Heatmap</span>
+                        </label>
+                    </div>
+                    
+                    <div class="overlay-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signal-layer-toggle" checked
+                                   onchange="trafficMap.toggleLayer('signals')">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Traffic Signals</span>
+                        </label>
+                    </div>
+                    
+                    <div class="overlay-control">
+                        <button class="btn btn-sm" onclick="trafficMap.enableAddMarkerMode()">
+                            <i class="fas fa-map-marker-alt"></i> Add Marker
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Panel -->
+            <div class="map-sidepanel">
+                <!-- Legend -->
+                <div class="map-legend">
+                    <h3><i class="fas fa-key"></i> Map Legend</h3>
+                    <div class="legend-items">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #00ff00;"></div>
+                            <span>Light Traffic (0-40%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ffff00;"></div>
+                            <span>Moderate Traffic (40-60%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff9900;"></div>
+                            <span>Heavy Traffic (60-80%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff0000;"></div>
+                            <span>Severe Traffic (80-100%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon">
+                                <i class="fas fa-traffic-light" style="color: #28a745;"></i>
+                            </div>
+                            <span>Normal Signal</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon">
+                                <i class="fas fa-traffic-light" style="color: #ffc107;"></i>
+                            </div>
+                            <span>Heavy Signal</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon">
+                                <i class="fas fa-traffic-light" style="color: #dc3545;"></i>
+                            </div>
+                            <span>Congested Signal</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Details -->
+                <div class="location-details">
+                    <h3><i class="fas fa-info-circle"></i> Selected Location</h3>
+                    <div class="details-content" id="location-details">
+                        <div class="selected-info">
+                            <div class="info-header">
+                                <h4>Times Square (Ave 7 & 42nd)</h4>
+                                <span class="badge" style="background: rgba(247, 37, 133, 0.2); color: var(--danger); padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem;">HEAVY TRAFFIC</span>
+                            </div>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="label">Avg Speed</span>
+                                    <span class="value">12 mph</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Vehicle Count</span>
+                                    <span class="value">145</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Signal Phase</span>
+                                    <span class="value" style="color: var(--danger)">Red (24s)</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Congestion</span>
+                                    <span class="value" style="color: var(--danger)">85%</span>
+                                </div>
+                            </div>
+                            <div class="info-actions">
+                                <button class="btn btn-sm btn-outline-primary" style="width: 100%" onclick="alert('Opening camera view...')">
+                                    <i class="fas fa-video"></i> View Cam
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" style="width: 100%" onclick="reportIncident()">
+                                    <i class="fas fa-exclamation-triangle"></i> Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions-panel">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-warning" onclick="findRoute()">
+                            <i class="fas fa-route"></i> Find Route
+                        </button>
+                        <button class="btn btn-danger" onclick="reportIncident()">
+                            <i class="fas fa-exclamation-triangle"></i> Report Incident
+                        </button>
+                        <button class="btn btn-info" onclick="viewStatistics()">
+                            <i class="fas fa-chart-bar"></i> View Statistics
+                        </button>
+                        <button class="btn btn-success" onclick="optimizeArea()">
+                            <i class="fas fa-magic"></i> Optimize Area
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Map Statistics -->
+                <div class="map-statistics">
+                    <h3><i class="fas fa-chart-pie"></i> Area Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Avg. Congestion</div>
+                            <div class="stat-value" id="area-avg-congestion">--%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Signals</div>
+                            <div class="stat-value" id="area-total-signals">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Incidents</div>
+                            <div class="stat-value" id="area-incidents">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Last Updated</div>
+                            <div class="stat-value" id="area-last-updated">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Route Planning Modal -->
+        <div class="modal" id="route-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-route"></i> Route Planning</h3>
+                    <button class="modal-close" onclick="closeModal('route-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="route-form">
+                        <div class="form-group">
+                            <label for="route-start"><i class="fas fa-map-marker-alt"></i> Start</label>
+                            <input type="text" id="route-start-input" placeholder="Enter start address or click on map">
+                        </div>
+                        <div class="form-group">
+                            <label for="route-end"><i class="fas fa-flag-checkered"></i> Destination</label>
+                            <input type="text" id="route-end-input" placeholder="Enter destination address">
+                        </div>
+                        <div class="form-group">
+                            <label for="route-mode"><i class="fas fa-car"></i> Mode</label>
+                            <select id="route-mode">
+                                <option value="fastest">Fastest Route</option>
+                                <option value="shortest">Shortest Route</option>
+                                <option value="eco">Eco-friendly</option>
+                                <option value="scenic">Scenic Route</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="calculateRoute()">
+                            <i class="fas fa-search"></i> Calculate Route
+                        </button>
+                    </div>
+                    <div class="route-results" id="route-results">
+                        <!-- Route results will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <style>
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .map-controls {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .map-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 1.5rem;
+            height: calc(100vh - 180px);
+        }
+        
+        .map-main {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .map-container {
+            flex: 1;
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(67, 97, 238, 0.3);
+        }
+        
+        .map-overlay-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(26, 26, 46, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 1000;
+        }
+        
+        .overlay-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .map-sidepanel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .map-legend, .location-details, .quick-actions-panel, .map-statistics {
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(67, 97, 238, 0.2);
+        }
+        
+        .map-legend h3, .location-details h3, .quick-actions-panel h3, .map-statistics h3 {
+            margin-bottom: 1rem;
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        .legend-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .details-content {
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .no-selection {
+            color: var(--gray);
+            font-style: italic;
+            text-align: center;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: rgba(26, 26, 46, 0.95);
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid var(--primary);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .route-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (max-width: 1200px) {
+            .map-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .map-sidepanel {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                display: grid;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .map-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .map-sidepanel {
+                grid-template-columns: 1fr;
+            }
+            
+            .map-overlay-controls {
+                position: relative;
+                top: auto;
+                left: auto;
+                margin-bottom: 1rem;
+            }
+        }
+        
+        /* Leaflet overrides */
+        .leaflet-container {
+            background: #1a1a2e !important;
+        }
+        
+        .leaflet-control-zoom {
+            border: none !important;
+            background: rgba(26, 26, 46, 0.9) !important;
+        }
+        
+        .leaflet-control-zoom a {
+            background: rgba(67, 97, 238, 0.8) !important;
+            color: white !important;
+            border: none !important;
+        }
+        
+        .leaflet-control-zoom a:hover {
+            background: rgba(67, 97, 238, 1) !important;
+        }
+        
+        .leaflet-popup-content {
+            color: white !important;
+            background: rgba(26, 26, 46, 0.95) !important;
+        }
+        
+        .leaflet-popup-tip {
+            background: rgba(26, 26, 46, 0.95) !important;
+        }
+    </style>
+    <script>
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update statistics
+            updateAreaStatistics();
+            
+            // Set up event listeners for modals
+            setupModalListeners();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                if (window.trafficMap) {
+                    window.trafficMap.refreshData();
+                    updateAreaStatistics();
+                }
+            }, 30000);
+        });
+        
+        function updateAreaStatistics() {
+            // Simulate fetching area statistics
+            document.getElementById('area-avg-congestion').textContent = 
+                `${Math.floor(Math.random() * 30) + 50}%`;
+            document.getElementById('area-total-signals').textContent = 
+                Math.floor(Math.random() * 20) + 10;
+            document.getElementById('area-incidents').textContent = 
+                Math.floor(Math.random() * 5);
+            document.getElementById('area-last-updated').textContent = 
+                new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function findRoute() {
+            openModal('route-modal');
+        }
+        
+        function reportIncident() {
+            alert('Incident reporting feature would open a form here.');
+            // In production, open incident reporting modal
+        }
+        
+        function viewStatistics() {
+            window.location.href = '/reports';
+        }
+        
+        function optimizeArea() {
+            if (confirm('Optimize all traffic signals in visible area?')) {
+                // In production, call optimization API
+                showNotification('Area optimization started...', 'info');
+                setTimeout(() => {
+                    showNotification('Area optimized successfully!', 'success');
+                }, 2000);
+            }
+        }
+        
+        function calculateRoute() {
+            const start = document.getElementById('route-start-input').value;
+            const end = document.getElementById('route-end-input').value;
+            const mode = document.getElementById('route-mode').value;
+            
+            if (!start || !end) {
+                alert('Please enter both start and destination locations');
+                return;
+            }
+            
+            // Show loading
+            const resultsDiv = document.getElementById('route-results');
+            resultsDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Calculating optimal route...</p>
+                </div>
+            `;
+            
+            // Simulate route calculation
+            setTimeout(() => {
+                resultsDiv.innerHTML = `
+                    <div class="route-options">
+                        <div class="route-option best">
+                            <div class="route-header">
+                                <h4>Fastest Route</h4>
+                                <span class="badge best-badge">RECOMMENDED</span>
+                            </div>
+                            <div class="route-details">
+                                <div class="detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>25 minutes</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-road"></i>
+                                    <span>5.2 miles</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-traffic-light"></i>
+                                    <span>Medium traffic</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="selectRoute(1)">
+                                <i class="fas fa-check"></i> Select Route
+                            </button>
+                        </div>
+                        
+                        <div class="route-option">
+                            <div class="route-header">
+                                <h4>Alternative Route</h4>
+                            </div>
+                            <div class="route-details">
+                                <div class="detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>28 minutes</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-road"></i>
+                                    <span>5.8 miles</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-traffic-light"></i>
+                                    <span>Low traffic</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" onclick="selectRoute(2)">
+                                <i class="fas fa-check"></i> Select Route
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // In production, draw route on map
+                if (window.trafficMap) {
+                    const sampleRoute = [
+                        { lat: 40.7128, lng: -74.0060, name: 'Start' },
+                        { lat: 40.7580, lng: -73.9855, name: 'Midpoint' },
+                        { lat: 40.7614, lng: -73.9776, name: 'End' }
+                    ];
+                    window.trafficMap.drawRoute(sampleRoute);
+                }
+            }, 1500);
+        }
+        
+        function selectRoute(routeId) {
+            showNotification(`Route ${routeId} selected. Navigation started.`, 'success');
+            closeModal('route-modal');
+        }
+        
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+        
+        function setupModalListeners() {
+            // Close modal when clicking outside
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('show');
+                    }
+                });
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal.show').forEach(modal => {
+                        modal.classList.remove('show');
+                    });
+                }
+            });
+        }
+        
+        function showNotification(message, type = 'info') {
+            // Reuse notification function from main.js or create simple alert
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(message, type);
+            } else {
+                alert(`${type.toUpperCase()}: ${message}`);
+            }
+        }
+    </script>
+</body>
+</html>
